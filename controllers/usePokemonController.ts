@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Pokemon } from "../models/Pokemon";
 import { fetchPokemon } from "../services/pokemonApi";
+import { loadFavorites, saveFavorites } from "../services/favoritesStorage";
+
 
 export function usePokemonController() {
   const [pokemonName, setPokemonName] = useState("");
@@ -8,10 +10,22 @@ export function usePokemonController() {
   const [error, setError] = useState("");
   const [pokemon, setPokemon] = useState<Pokemon | null>(null);
 
-  // ✅ Favorites state
   const [favorites, setFavorites] = useState<string[]>([]);
 
-  // ✅ Derived state (computed, not stored separately)
+  // Load favorites when app starts
+  useEffect(() => {
+    async function init() {
+      const saved = await loadFavorites();
+      setFavorites(saved);
+    }
+    init();
+  }, []);
+
+  // Save favorites whenever they change
+  useEffect(() => {
+    saveFavorites(favorites);
+  }, [favorites]);
+
   const isFavorite = useMemo(() => {
     if (!pokemon) return false;
     return favorites.includes(pokemon.name);
@@ -38,7 +52,6 @@ export function usePokemonController() {
     }
   }
 
-  // ✅ Add / Remove favorite
   function toggleFavorite() {
     if (!pokemon) return;
 
@@ -50,7 +63,6 @@ export function usePokemonController() {
     });
   }
 
-  // ✅ Load a favorite Pokémon
   async function loadFavorite(name: string) {
     setPokemonName(name);
     setLoading(true);
@@ -74,7 +86,6 @@ export function usePokemonController() {
     error,
     pokemon,
     search,
-
     favorites,
     isFavorite,
     toggleFavorite,
