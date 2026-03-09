@@ -1,27 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import { Button, StyleSheet, Text, TextInput, View, Image } from "react-native";
-import { fetchPokemon } from "../services/pokemonApi";
+import { usePokemonController } from "../controllers/usePokemonController";
 
 export default function HomeScreen() {
-  const [query, setQuery] = useState("");
-  const [pokemon, setPokemon] = useState(null); // Pokemon | null
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleSearch = async () => {
-    try {
-      setError("");
-      setLoading(true);
-      setPokemon(null);
-
-      const data = await fetchPokemon(query);
-      setPokemon(data);
-    } catch (e) {
-      setError(e.message ?? "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { pokemonName, setPokemonName, loading, error, pokemon, search } =
+    usePokemonController();
 
   return (
     <View style={styles.container}>
@@ -30,13 +13,15 @@ export default function HomeScreen() {
       <TextInput
         style={styles.input}
         placeholder="Enter Pokemon name (e.g., pikachu)"
-        value={query}
-        onChangeText={setQuery}
+        value={pokemonName}
+        onChangeText={setPokemonName}
         autoCapitalize="none"
         autoCorrect={false}
+        onSubmitEditing={search} // optional: press enter to search
+        returnKeyType="search"
       />
 
-      <Button title="Get Pokemon" onPress={handleSearch} />
+      <Button title={loading ? "Searching..." : "Get Pokemon"} onPress={search} disabled={loading} />
 
       {loading && <Text>Loading...</Text>}
       {!!error && <Text style={{ color: "red" }}>{error}</Text>}
@@ -46,7 +31,10 @@ export default function HomeScreen() {
           <Text style={{ fontSize: 20, fontWeight: "600" }}>{pokemon.name}</Text>
 
           {!!pokemon.image && (
-            <Image source={{ uri: pokemon.image }} style={{ width: 120, height: 120 }} />
+            <Image
+              source={{ uri: pokemon.image }}
+              style={{ width: 120, height: 120 }}
+            />
           )}
 
           <Text>Types: {pokemon.types?.join(", ")}</Text>
