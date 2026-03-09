@@ -1,40 +1,27 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button, StyleSheet, Text, TextInput, View, Image } from "react-native";
+import { fetchPokemon } from "../services/pokemonApi";
 
 export default function HomeScreen() {
-  const [pokemon, setPokemon] = useState("");
+  const [query, setQuery] = useState("");
+  const [pokemon, setPokemon] = useState(null); // Pokemon | null
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
 
-  async function handleSearch() {
-    const q = pokemon?.trim().toLowerCase();
-
-    if (!q) {
-      setError("Please enter a Pokémon name.");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    setPokemon(null);
-
+  const handleSearch = async () => {
     try {
-      const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${q}`);
+      setError("");
+      setLoading(true);
+      setPokemon(null);
 
-      if (!res.ok) {
-        setError(`Pokemon not found (status ${res.status})`);
-        return;
-      }
-
-      const json = await res.json();
-      setPokemon(json);
+      const data = await fetchPokemon(query);
+      setPokemon(data);
     } catch (e) {
-      setError("Network error. Please try again.");
+      setError(e.message ?? "Something went wrong");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     <View style={styles.container}>
@@ -43,8 +30,8 @@ export default function HomeScreen() {
       <TextInput
         style={styles.input}
         placeholder="Enter Pokemon name (e.g., pikachu)"
-        value={pokemon}
-        onChangeText={setPokemon}
+        value={query}
+        onChangeText={setQuery}
         autoCapitalize="none"
         autoCorrect={false}
       />
@@ -53,52 +40,30 @@ export default function HomeScreen() {
 
       {loading && <Text>Loading...</Text>}
       {!!error && <Text style={{ color: "red" }}>{error}</Text>}
-      {!!pokemon && <Text>Found: {pokemon.name}</Text>}
+
       {!!pokemon && (
-  <View style={{ marginTop: 16, alignItems: "center", gap: 8 }}>
-    <Text style={{ fontSize: 20, fontWeight: "600" }}>{pokemon.name}</Text>
+        <View style={{ marginTop: 16, alignItems: "center", gap: 8 }}>
+          <Text style={{ fontSize: 20, fontWeight: "600" }}>{pokemon.name}</Text>
 
-    {!!pokemon.sprites?.front_default && (
-      <Image
-        source={{ uri: pokemon.sprites.front_default }}
-        style={{ width: 120, height: 120 }}
-      />
-    )}
+          {!!pokemon.image && (
+            <Image source={{ uri: pokemon.image }} style={{ width: 120, height: 120 }} />
+          )}
 
-    <Text>Types: {pokemon.types?.map((t: any) => t.type.name).join(", ")}</Text>
+          <Text>Types: {pokemon.types?.join(", ")}</Text>
+          <Text>Abilities: {pokemon.abilities?.join(", ")}</Text>
 
-    <Text>
-      Abilities: {pokemon.abilities?.map((a: any) => a.ability.name).join(", ")}
-    </Text>
-
-    <Text style={{ fontWeight: "600", marginTop: 8 }}>Moves (first 5):</Text>
-    {pokemon.moves?.slice(0, 5).map((m: any) => (
-      <Text key={m.move.name}>• {m.move.name}</Text>
-    ))}
-  </View>
-)}
+          <Text style={{ fontWeight: "600", marginTop: 8 }}>Moves (first 5):</Text>
+          {pokemon.moves?.map((m) => (
+            <Text key={m}>• {m}</Text>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-    gap: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "600",
-    marginBottom: 10,
-  },
-  input: {
-    width: "100%",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-  },
+  container: { flex: 1, alignItems: "center", justifyContent: "center", padding: 20, gap: 12 },
+  title: { fontSize: 24, fontWeight: "600", marginBottom: 10 },
+  input: { width: "100%", borderWidth: 1, borderColor: "#ccc", borderRadius: 8, padding: 10 },
 });
